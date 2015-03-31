@@ -1,0 +1,21 @@
+{
+    "name": "dmstr/yii2-yaml-converter-command",
+    "description": "Converts and merges YAML files based on YAML rules",
+    "type": "yii2-extension",
+    "keywords": ["yii2","extension"],
+    "license": "BSD-3-Clause",
+    "authors": [
+        {
+            "name": "Tobias Munk",
+            "email": "tobias@diemeisterei.de"
+        }
+    ],
+    "require": {
+        "yiisoft/yii2": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "dmstr\\console\\controllers\\": ""
+        }
+    }
+}
