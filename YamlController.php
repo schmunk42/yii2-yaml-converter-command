@@ -53,6 +53,18 @@ class YamlController extends Controller
         $data   = Yaml::dump($stacks, 10);
         file_put_contents(\Yii::getAlias($this->outputDirectory . '/ci.yml'), $data);
 
+        foreach ($stacks as $name => $attrs) {
+            foreach ($attrs as $j => $data) {
+                unset($stacks[$name]['volumes']);
+            }
+            switch ($service) {
+                case 'seleniumchrome':
+                case 'seleniumfirefox':
+                    unset($stacks[0][$i]);
+                    break;
+            }
+        }
+
         $file   = file_get_contents(\Yii::getAlias($this->templateDirectory . '/staging.yml'));
         $stack  = Yaml::parse($file);
         $stacks = ArrayHelper::merge($stacks, $stack);
