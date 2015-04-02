@@ -19,18 +19,18 @@ class YamlController extends Controller
     public $dockerComposeFile = '@app/docker-compose.yml';
     public $templateDirectory = '@app/build';
     public $outputDirectory = '@app/build/stacks-generated';
-    public $stacks = ['test', 'ci', 'staging', 'production'];
+    #### public $stacks = ['test', 'ci', 'staging', 'production'];
 
     public function actionConvert()
     {
         $file      = file_get_contents(\Yii::getAlias($this->dockerComposeFile));
         $base      = Yaml::parse($file);
 
-        $file   = file_get_contents(\Yii::getAlias($this->templateDirectory . '/test.yml'));
+        $file   = file_get_contents(\Yii::getAlias($this->templateDirectory . '/local-test.yml'));
         $stack  = Yaml::parse($file);
         $stacks = ArrayHelper::merge($base, $stack);
         $data   = Yaml::dump($stacks, 10);
-        file_put_contents(\Yii::getAlias($this->outputDirectory . '/test.yml'), $data);
+        file_put_contents(\Yii::getAlias($this->outputDirectory . '/local-test.yml'), $data);
 
         foreach ($stacks as $i => $services) {
             foreach ($services as $j => $service) {
@@ -47,29 +47,33 @@ class YamlController extends Controller
             }
         }
 
-        $file   = file_get_contents(\Yii::getAlias($this->templateDirectory . '/ci.yml'));
+        $file   = file_get_contents(\Yii::getAlias($this->templateDirectory . '/gitlab-ci.yml'));
         $stack  = Yaml::parse($file);
         $stacks = ArrayHelper::merge($stacks, $stack);
         $data   = Yaml::dump($stacks, 10);
-        file_put_contents(\Yii::getAlias($this->outputDirectory . '/ci.yml'), $data);
+        file_put_contents(\Yii::getAlias($this->outputDirectory . '/gitlab-ci.yml'), $data);
+
+        var_dump($stacks);
 
         foreach ($stacks as $name => $attrs) {
             foreach ($attrs as $j => $data) {
                 unset($stacks[$name]['volumes']);
             }
-            switch ($service) {
+            echo $name;
+            switch ($name) {
+                case 'appassets':
                 case 'seleniumchrome':
                 case 'seleniumfirefox':
-                    unset($stacks[0][$i]);
+                    unset($stacks[$name]);
                     break;
             }
         }
 
-        $file   = file_get_contents(\Yii::getAlias($this->templateDirectory . '/staging.yml'));
+        $file   = file_get_contents(\Yii::getAlias($this->templateDirectory . '/tutum-staging.yml'));
         $stack  = Yaml::parse($file);
         $stacks = ArrayHelper::merge($stacks, $stack);
         $data   = Yaml::dump($stacks, 10);
-        file_put_contents(\Yii::getAlias($this->outputDirectory . '/staging.yml'), $data);
+        file_put_contents(\Yii::getAlias($this->outputDirectory . '/tutum-staging.yml'), $data);
 
         $this->stdout("Done.\n");
     }
