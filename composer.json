@@ -18,5 +18,8 @@
         "psr-4": {
             "dmstr\\console\\controllers\\": ""
         }
+    },
+    "extra": {
+        "bootstrap": "dmstr\\console\\controllers\\BootstrapYamlController"
     }
 }

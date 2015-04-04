@@ -8,7 +8,6 @@
 
 namespace dmstr\console\controllers;
 
-
 use Symfony\Component\Yaml\Yaml;
 use yii\console\Controller;
 use yii\helpers\ArrayHelper;
