@@ -28,7 +28,7 @@ class YamlControllerBootstrap implements BootstrapInterface
     public function bootstrap($app)
     {
         if ($app instanceof \yii\console\Application) {
-            $app->controllerMap['yaml'] = 'dmstr\console\controller\YamlController';
+            $app->controllerMap['yaml'] = 'dmstr\console\controllers\YamlController';
         }
     }
 }
