@@ -20,6 +20,6 @@
         }
     },
     "extra": {
-        "bootstrap": "dmstr\\console\\controllers\\BootstrapYamlController"
+        "bootstrap": "dmstr\\console\\controllers\\YamlControllerBootstrap"
     }
 }
