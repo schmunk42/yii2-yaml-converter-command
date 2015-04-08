@@ -10,13 +10,7 @@ The preferred way to install this extension is through [composer](http://getcomp
 Either run
 
 ```
-php composer.phar require --prefer-dist dmstr/yii2-yaml-converter-command "*"
-```
-
-or add
-
-```
-"dmstr/yii2-yaml-converter-command": "*"
+composer require --prefer-dist dmstr/yii2-yaml-converter-command "*"
 ```
 
 to the require section of your `composer.json` file.
@@ -25,7 +19,9 @@ to the require section of your `composer.json` file.
 Usage
 -----
 
-Once the extension is installed, simply use it in your code by  :
+Once the extension is installed, use it on the command line:
 
-```php
-<?= \dmstr\console\controllers\AutoloadExample::widget(); ?>```
+    ./yii yaml/convert \
+        --dockerComposeFile=@root/docker-compose.yml \
+        --templateDirectory=@root/build/ \
+        --outputDirectory=@root/build/stacks-generated

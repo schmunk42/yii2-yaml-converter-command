@@ -18,63 +18,80 @@ class YamlController extends Controller
     public $dockerComposeFile = '@app/docker-compose.yml';
     public $templateDirectory = '@app/build';
     public $outputDirectory = '@app/build/stacks-generated';
+
     #### public $stacks = ['test', 'ci', 'staging', 'production'];
+
+
+    /**
+     * @inheritdoc
+     */
+    public function options($actionId)
+    {
+        return array_merge(
+            parent::options($actionId),
+            ['dockerComposeFile', 'templateDirectory', 'outputDirectory']
+        );
+    }
 
     public function actionConvert()
     {
-        $file      = file_get_contents(\Yii::getAlias($this->dockerComposeFile));
-        $base      = Yaml::parse($file);
+        $this->stdout("Starting YAML convert process...\n");
+        $dev   = $this->readFile($this->dockerComposeFile);
 
-        $file   = file_get_contents(\Yii::getAlias($this->templateDirectory . '/local-test.yml'));
-        $stack  = Yaml::parse($file);
-        $stacks = ArrayHelper::merge($base, $stack);
-        $data   = Yaml::dump($stacks, 10);
-        file_put_contents(\Yii::getAlias($this->outputDirectory . '/local-test.yml'), $data);
+        $this->stdout("Creating 'local-test'...\n");
+        $test  = ArrayHelper::merge($dev, $this->readFile($this->templateDirectory.'/local-test.tpl.yml'));
+        $this->writeFile($this->templateDirectory.'/stacks-generated/local-test.yml', Yaml::dump($test, 10));
 
-        foreach ($stacks as $i => $services) {
+        $this->stdout("Creating 'gitlab-ci'...\n");
+        $ci = $test;
+        foreach ($ci as $i => $services) {
             foreach ($services as $j => $service) {
-                #var_dump($stacks[0][$i]);
-                unset($stacks[$i]['volumes']);
-                unset($stacks[$i]['build']);
-                ###$stacks[0][$i]['tags'] = ['app'];
-            }
-            if ($i == 'ftp') {
-                ###unset($stacks[0][$i]);
-            }
-            if ($i == 'db') {
-                ###unset($stacks[0][$i]);
+                unset($ci[$i]['volumes']);
+                unset($ci[$i]['build']);
             }
         }
+        $ci  = ArrayHelper::merge($ci, $this->readFile($this->templateDirectory.'/gitlab-ci.tpl.yml'));
+        $this->writeFile($this->templateDirectory.'/stacks-generated/gitlab-ci.yml', Yaml::dump($ci, 10));
 
-        $file   = file_get_contents(\Yii::getAlias($this->templateDirectory . '/gitlab-ci.yml'));
-        $stack  = Yaml::parse($file);
-        $stacks = ArrayHelper::merge($stacks, $stack);
-        $data   = Yaml::dump($stacks, 10);
-        file_put_contents(\Yii::getAlias($this->outputDirectory . '/gitlab-ci.yml'), $data);
-
-        var_dump($stacks);
-
-        foreach ($stacks as $name => $attrs) {
+        $this->stdout("Creating 'tutum-staging'...\n");
+        $staging = $ci;
+        foreach ($staging as $name => $attrs) {
+            unset($staging[$name]['volumes']);
             foreach ($attrs as $j => $data) {
-                unset($stacks[$name]['volumes']);
+                unset($staging[$name]['volumes']);
+                unset($staging[$name]['build']);
             }
-            echo $name;
             switch ($name) {
-                case 'appassets':
                 case 'seleniumchrome':
                 case 'seleniumfirefox':
-                    unset($stacks[$name]);
+                    unset($staging[$name]);
                     break;
             }
         }
-
-        $file   = file_get_contents(\Yii::getAlias($this->templateDirectory . '/tutum-staging.yml'));
-        $stack  = Yaml::parse($file);
-        $stacks = ArrayHelper::merge($stacks, $stack);
-        $data   = Yaml::dump($stacks, 10);
-        file_put_contents(\Yii::getAlias($this->outputDirectory . '/tutum-staging.yml'), $data);
+        $staging  = ArrayHelper::merge($staging, $this->readFile($this->templateDirectory.'/tutum-staging.tpl.yml'));
+        $this->writeFile($this->templateDirectory.'/stacks-generated/tutum-staging.yml', Yaml::dump($staging, 10));
 
         $this->stdout("Done.\n");
     }
 
+    /**
+     * @param $file YAML file to read and parse
+     *
+     * @return array data from the YAML file
+     */
+    public function readFile($file)
+    {
+        $file = file_get_contents(\Yii::getAlias($file));
+        return Yaml::parse($file);
+    }
+
+    /**
+     * @param $file
+     * @param $data
+     */
+    public function writeFile($file, $data)
+    {
+        file_put_contents(\Yii::getAlias($file), $data);
+
+    }
 }
