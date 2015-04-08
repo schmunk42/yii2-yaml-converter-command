@@ -59,7 +59,7 @@ class YamlController extends Controller
         $file = 'staging-tutum';
         $this->stdout("Creating '{$file}'...\n");
         $stack = $this->removeServiceAttributes($stack, ['volumes', 'build']);
-        $stack = $this->removeServices($stack, ['seleniumchrome', 'seleniumfirefox']);
+        $stack = $this->removeServices($stack, ['starragcombuilder', 'seleniumchrome', 'seleniumfirefox']);
         $stack = ArrayHelper::merge($stack, $this->readFile("{$this->templateDirectory}/{$file}.tpl.yml"));
         $this->writeFile("{$this->outputDirectory}/docker-compose-{$file}.yml", Yaml::dump($stack, 10));
 
