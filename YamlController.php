@@ -45,35 +45,21 @@ class YamlController extends Controller
 
         $file = 'test-local';
         $this->stdout("Creating '{$file}'...\n");
-        $dev = $this->removeStackAttributes($dev, ['volumes','build']);
+        $dev   = $this->removeServiceAttributes($dev, ['volumes', 'build']);
         $stack = $this->readFile("{$this->templateDirectory}/{$file}.tpl.yml");
         $stack = ArrayHelper::merge($dev, $stack);
         $this->writeFile("{$this->outputDirectory}/docker-compose-{$file}.yml", Yaml::dump($stack, 10));
 
         $file = 'ci-gitlab';
         $this->stdout("Creating '{$file}'...\n");
-        // TODO: make generic functions
-        foreach ($stack as $i => $services) {
-            foreach ($services as $j => $service) {
-                unset($stack[$i]['volumes']);
-                unset($stack[$i]['build']);
-            }
-        }
+        $stack = $this->removeServiceAttributes($stack, ['volumes', 'build']);
         $stack = ArrayHelper::merge($stack, $this->readFile("{$this->templateDirectory}/{$file}.tpl.yml"));
         $this->writeFile("{$this->outputDirectory}/docker-compose-{$file}.yml", Yaml::dump($stack, 10));
 
         $file = 'staging-tutum';
         $this->stdout("Creating '{$file}'...\n");
-        $stack = $this->removeStackAttributes($stack, ['volumes','build']);
-        // TODO: make generic functions
-        foreach ($stack as $name => $attrs) {
-            switch ($name) {
-                case 'seleniumchrome':
-                case 'seleniumfirefox':
-                    unset($stack[$name]);
-                    break;
-            }
-        }
+        $stack = $this->removeServiceAttributes($stack, ['volumes', 'build']);
+        $stack = $this->removeServices($stack, ['seleniumchrome', 'seleniumfirefox']);
         $stack = ArrayHelper::merge($stack, $this->readFile("{$this->templateDirectory}/{$file}.tpl.yml"));
         $this->writeFile("{$this->outputDirectory}/docker-compose-{$file}.yml", Yaml::dump($stack, 10));
 
@@ -100,15 +86,41 @@ class YamlController extends Controller
         file_put_contents(\Yii::getAlias($file), $data);
     }
 
-    private function removeStackAttributes($stack, $attributes)
+    /**
+     * helper function
+     *
+     * @param $stack
+     * @param $attributes
+     *
+     * @return mixed
+     */
+    private function removeServiceAttributes($stack, $attributes)
     {
         // TODO: make generic functions
         foreach ($stack as $i => $services) {
-            foreach ($services as $j => $service) {
-                foreach ($attributes AS $attr) {
-                    unset($stack[$i][$attr]);
+            if (is_array($services)) {
+                foreach ($services as $j => $service) {
+                    foreach ($attributes AS $attr) {
+                        unset($stack[$i][$attr]);
+                    }
                 }
             }
+        }
+        return $stack;
+    }
+
+    /**
+     * helper function
+     *
+     * @param $stack
+     * @param $services
+     *
+     * @return mixed
+     */
+    private function removeServices($stack, $services)
+    {
+        foreach ($services AS $name) {
+            unset($stack[$name]);
         }
         return $stack;
     }
