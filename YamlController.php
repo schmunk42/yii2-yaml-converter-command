@@ -45,7 +45,9 @@ class YamlController extends Controller
 
         $file = 'test-local';
         $this->stdout("Creating '{$file}'...\n");
-        $stack = ArrayHelper::merge($dev, $this->readFile("{$this->templateDirectory}/{$file}.tpl.yml"));
+        $dev = $this->removeStackAttributes($dev, ['volumes','build']);
+        $stack = $this->readFile("{$this->templateDirectory}/{$file}.tpl.yml");
+        $stack = ArrayHelper::merge($dev, $stack);
         $this->writeFile("{$this->outputDirectory}/docker-compose-{$file}.yml", Yaml::dump($stack, 10));
 
         $file = 'ci-gitlab';
@@ -62,13 +64,9 @@ class YamlController extends Controller
 
         $file = 'staging-tutum';
         $this->stdout("Creating '{$file}'...\n");
+        $stack = $this->removeStackAttributes($stack, ['volumes','build']);
         // TODO: make generic functions
         foreach ($stack as $name => $attrs) {
-            unset($stack[$name]['volumes']);
-            foreach ($attrs as $j => $data) {
-                unset($stack[$name]['volumes']);
-                unset($stack[$name]['build']);
-            }
             switch ($name) {
                 case 'seleniumchrome':
                 case 'seleniumfirefox':
@@ -100,6 +98,18 @@ class YamlController extends Controller
     public function writeFile($file, $data)
     {
         file_put_contents(\Yii::getAlias($file), $data);
+    }
 
+    private function removeStackAttributes($stack, $attributes)
+    {
+        // TODO: make generic functions
+        foreach ($stack as $i => $services) {
+            foreach ($services as $j => $service) {
+                foreach ($attributes AS $attr) {
+                    unset($stack[$i][$attr]);
+                }
+            }
+        }
+        return $stack;
     }
 }
