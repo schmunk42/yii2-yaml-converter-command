@@ -24,4 +24,4 @@ Once the extension is installed, use it on the command line:
     ./yii yaml/convert-docker-compose \
         --dockerComposeFile=@root/docker-compose.yml \
         --templateDirectory=@root/build/stacks-tpl \
-        --outputDirectory=@root/build/stacks-gen
+        --outputDirectory=@root

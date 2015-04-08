@@ -46,7 +46,7 @@ class YamlController extends Controller
         $file = 'test-local';
         $this->stdout("Creating '{$file}'...\n");
         $stack = ArrayHelper::merge($dev, $this->readFile("{$this->templateDirectory}/{$file}.tpl.yml"));
-        $this->writeFile("{$this->outputDirectory}/{$file}.yml", Yaml::dump($stack, 10));
+        $this->writeFile("{$this->outputDirectory}/docker-compose-{$file}.yml", Yaml::dump($stack, 10));
 
         $file = 'ci-gitlab';
         $this->stdout("Creating '{$file}'...\n");
@@ -58,7 +58,7 @@ class YamlController extends Controller
             }
         }
         $stack = ArrayHelper::merge($stack, $this->readFile("{$this->templateDirectory}/{$file}.tpl.yml"));
-        $this->writeFile("{$this->outputDirectory}/{$file}.yml", Yaml::dump($stack, 10));
+        $this->writeFile("{$this->outputDirectory}/docker-compose-{$file}.yml", Yaml::dump($stack, 10));
 
         $file = 'staging-tutum';
         $this->stdout("Creating '{$file}'...\n");
@@ -77,7 +77,7 @@ class YamlController extends Controller
             }
         }
         $stack = ArrayHelper::merge($stack, $this->readFile("{$this->templateDirectory}/{$file}.tpl.yml"));
-        $this->writeFile("{$this->outputDirectory}/{$file}.yml", Yaml::dump($stack, 10));
+        $this->writeFile("{$this->outputDirectory}/docker-compose-{$file}.yml", Yaml::dump($stack, 10));
 
         $this->stdout("Done.\n");
     }
