@@ -1,9 +1,6 @@
 <?php
 /**
- * Created by PhpStorm.
- * User: tobias
- * Date: 30.03.15
- * Time: 20:22
+ * YAML converter
  */
 
 namespace dmstr\console\controllers;
@@ -14,13 +11,18 @@ use yii\helpers\ArrayHelper;
 
 class YamlController extends Controller
 {
-
+    /**
+     * @var string development docker-compose file
+     */
     public $dockerComposeFile = '@app/docker-compose.yml';
-    public $templateDirectory = '@app/build';
-    public $outputDirectory = '@app/build/stacks-generated';
-
-    #### public $stacks = ['test', 'ci', 'staging', 'production'];
-
+    /**
+     * @var string yaml template directory
+     */
+    public $templateDirectory = '@app/build/stacks-tpl';
+    /**
+     * @var string yaml output directory
+     */
+    public $outputDirectory = '@app/build/stacks-gen';
 
     /**
      * @inheritdoc
@@ -33,43 +35,49 @@ class YamlController extends Controller
         );
     }
 
-    public function actionConvert()
+    /**
+     * convert and merge docker-compose.yml with templates
+     */
+    public function actionConvertDockerCompose()
     {
         $this->stdout("Starting YAML convert process...\n");
-        $dev   = $this->readFile($this->dockerComposeFile);
+        $dev = $this->readFile($this->dockerComposeFile);
 
-        $this->stdout("Creating 'local-test'...\n");
-        $test  = ArrayHelper::merge($dev, $this->readFile($this->templateDirectory.'/local-test.tpl.yml'));
-        $this->writeFile($this->templateDirectory.'/stacks-generated/local-test.yml', Yaml::dump($test, 10));
+        $file = 'test-local';
+        $this->stdout("Creating '{$file}'...\n");
+        $stack = ArrayHelper::merge($dev, $this->readFile("{$this->templateDirectory}/{$file}.tpl.yml"));
+        $this->writeFile("{$this->outputDirectory}/{$file}.yml", Yaml::dump($stack, 10));
 
-        $this->stdout("Creating 'gitlab-ci'...\n");
-        $ci = $test;
-        foreach ($ci as $i => $services) {
+        $file = 'ci-gitlab';
+        $this->stdout("Creating '{$file}'...\n");
+        // TODO: make generic functions
+        foreach ($stack as $i => $services) {
             foreach ($services as $j => $service) {
-                unset($ci[$i]['volumes']);
-                unset($ci[$i]['build']);
+                unset($stack[$i]['volumes']);
+                unset($stack[$i]['build']);
             }
         }
-        $ci  = ArrayHelper::merge($ci, $this->readFile($this->templateDirectory.'/gitlab-ci.tpl.yml'));
-        $this->writeFile($this->templateDirectory.'/stacks-generated/gitlab-ci.yml', Yaml::dump($ci, 10));
+        $stack = ArrayHelper::merge($stack, $this->readFile("{$this->templateDirectory}/{$file}.tpl.yml"));
+        $this->writeFile("{$this->outputDirectory}/{$file}.yml", Yaml::dump($stack, 10));
 
-        $this->stdout("Creating 'tutum-staging'...\n");
-        $staging = $ci;
-        foreach ($staging as $name => $attrs) {
-            unset($staging[$name]['volumes']);
+        $file = 'staging-tutum';
+        $this->stdout("Creating '{$file}'...\n");
+        // TODO: make generic functions
+        foreach ($stack as $name => $attrs) {
+            unset($stack[$name]['volumes']);
             foreach ($attrs as $j => $data) {
-                unset($staging[$name]['volumes']);
-                unset($staging[$name]['build']);
+                unset($stack[$name]['volumes']);
+                unset($stack[$name]['build']);
             }
             switch ($name) {
                 case 'seleniumchrome':
                 case 'seleniumfirefox':
-                    unset($staging[$name]);
+                    unset($stack[$name]);
                     break;
             }
         }
-        $staging  = ArrayHelper::merge($staging, $this->readFile($this->templateDirectory.'/tutum-staging.tpl.yml'));
-        $this->writeFile($this->templateDirectory.'/stacks-generated/tutum-staging.yml', Yaml::dump($staging, 10));
+        $stack = ArrayHelper::merge($stack, $this->readFile("{$this->templateDirectory}/{$file}.tpl.yml"));
+        $this->writeFile("{$this->outputDirectory}/{$file}.yml", Yaml::dump($stack, 10));
 
         $this->stdout("Done.\n");
     }
