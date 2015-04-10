@@ -22,6 +22,13 @@ Usage
 Once the extension is installed, use it on the command line:
 
     ./yii yaml/convert-docker-compose \
+        --dockerComposeFile=@app/docker-compose.yml \
+        --templateDirectory=@app/build/stacks-tpl \
+        --outputDirectory=@app
+        
+Alternative alias        
+
+    ./yii yaml/convert-docker-compose \
         --dockerComposeFile=@root/docker-compose.yml \
         --templateDirectory=@root/build/stacks-tpl \
         --outputDirectory=@root
