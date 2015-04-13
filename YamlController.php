@@ -48,20 +48,29 @@ class YamlController extends Controller
         $dev   = $this->removeServiceAttributes($dev, ['volumes', 'build']);
         $stack = $this->readFile("{$this->templateDirectory}/{$file}.tpl.yml");
         $stack = ArrayHelper::merge($dev, $stack);
-        $this->writeFile("{$this->outputDirectory}/docker-compose-{$file}.yml", Yaml::dump($stack, 10));
+        $this->writeFile("{$this->outputDirectory}/docker-compose-{$file}.yml", $this->dump($stack));
 
         $file = 'ci-gitlab';
         $this->stdout("Creating '{$file}'...\n");
         $stack = $this->removeServiceAttributes($stack, ['volumes', 'build']);
         $stack = ArrayHelper::merge($stack, $this->readFile("{$this->templateDirectory}/{$file}.tpl.yml"));
-        $this->writeFile("{$this->outputDirectory}/docker-compose-{$file}.yml", Yaml::dump($stack, 10));
+        $this->writeFile("{$this->outputDirectory}/docker-compose-{$file}.yml", $this->dump($stack));
+
+        $file = 'staging-local';
+        $this->stdout("Creating '{$file}'...\n");
+        $stack = $this->removeServiceAttributes($stack, ['volumes', 'build']);
+        $this->removeAttributes($stack['appcli'], ['links']);
+        $stack = $this->removeServices(
+            $stack,
+            ['appbuilder', 'starragcombuilder', 'seleniumchrome', 'seleniumfirefox']
+        );
+        $stack = ArrayHelper::merge($stack, $this->readFile("{$this->templateDirectory}/{$file}.tpl.yml"));
+        $this->writeFile("{$this->outputDirectory}/docker-compose-{$file}.yml", $this->dump($stack));
 
         $file = 'staging-tutum';
         $this->stdout("Creating '{$file}'...\n");
-        $stack = $this->removeServiceAttributes($stack, ['volumes', 'build']);
-        $stack = $this->removeServices($stack, ['starragcombuilder', 'seleniumchrome', 'seleniumfirefox']);
         $stack = ArrayHelper::merge($stack, $this->readFile("{$this->templateDirectory}/{$file}.tpl.yml"));
-        $this->writeFile("{$this->outputDirectory}/docker-compose-{$file}.yml", Yaml::dump($stack, 10));
+        $this->writeFile("{$this->outputDirectory}/docker-compose-{$file}.yml", $this->dump($stack));
 
         $this->stdout("Done.\n");
     }
@@ -84,6 +93,11 @@ class YamlController extends Controller
     public function writeFile($file, $data)
     {
         file_put_contents(\Yii::getAlias($file), $data);
+    }
+
+    private function dump($stack){
+        $this->ksortRecursive($stack);
+        return Yaml::dump($stack, 10);
     }
 
     /**
@@ -123,5 +137,21 @@ class YamlController extends Controller
             unset($stack[$name]);
         }
         return $stack;
+    }
+
+    private function removeAttributes(&$service, $attributes)
+    {
+        foreach ($attributes AS $attr) {
+            unset($service[$attr]);
+        }
+    }
+
+    private function ksortRecursive(&$array, $sort_flags = SORT_REGULAR) {
+        if (!is_array($array)) return false;
+        ksort($array, $sort_flags);
+        foreach ($array as &$arr) {
+            $this->ksortRecursive($arr, $sort_flags);
+        }
+        return true;
     }
 }
