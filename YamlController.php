@@ -22,7 +22,7 @@ class YamlController extends Controller
     /**
      * @var string yaml output directory
      */
-    public $outputDirectory = '@app/build/stacks-gen';
+    public $outputDirectory = '@app';
 
     /**
      * @inheritdoc
