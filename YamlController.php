@@ -45,29 +45,29 @@ class YamlController extends Controller
 
         $file = 'test-local';
         $this->stdout("Creating '{$file}'...\n");
-        $dev   = $this->removeServiceAttributes($dev, ['volumes', 'build']);
+        $dev   = $this->removeServiceAttributes($dev, ['volumes' => '/.*/', 'build' => '/.*/']);
         $stack = $this->readFile("{$this->templateDirectory}/{$file}.tpl.yml");
         $stack = ArrayHelper::merge($dev, $stack);
         $this->writeFile("{$this->outputDirectory}/docker-compose-{$file}.yml", $this->dump($stack));
 
         $file = 'ci-gitlab';
         $this->stdout("Creating '{$file}'...\n");
-        $stack = $this->removeServiceAttributes($stack, ['volumes', 'build']);
+        $stack = $this->removeServiceAttributes($stack, ['volumes' => '/.*/', 'build' => '/.*/']);
         $stack = ArrayHelper::merge($stack, $this->readFile("{$this->templateDirectory}/{$file}.tpl.yml"));
         $this->writeFile("{$this->outputDirectory}/docker-compose-{$file}.yml", $this->dump($stack));
 
         $file = 'staging-local';
         $this->stdout("Creating '{$file}'...\n");
-        $stack = $this->removeServiceAttributes($stack, ['volumes', 'build']);
-        $this->removeAttributes($stack['appcli'], ['links']);
-        $stack = $this->removeServices(
-            $stack,
-            ['appbuilder', 'starragcombuilder', 'seleniumchrome', 'seleniumfirefox']
-        );
+        $stack = $this->removeServiceAttributes($stack, ['volumes' => '/.*/', 'build' => '/.*/']);
+        #####$this->removeAttributes($stack['appcli'], ['links']);
+        $this->removeAttributes($stack['apicli'], ['links']);
+        $stack = $this->removeServices($stack, ['/^TMP/',]);
+        $stack = $this->removeServiceAttributes($stack, ['links' => '/^TMP/']);
         $stack = ArrayHelper::merge($stack, $this->readFile("{$this->templateDirectory}/{$file}.tpl.yml"));
         $this->writeFile("{$this->outputDirectory}/docker-compose-{$file}.yml", $this->dump($stack));
 
         $file = 'staging-tutum';
+        $file = 'staging-mcgx';
         $this->stdout("Creating '{$file}'...\n");
         $stack = ArrayHelper::merge($stack, $this->readFile("{$this->templateDirectory}/{$file}.tpl.yml"));
         $this->writeFile("{$this->outputDirectory}/docker-compose-{$file}.yml", $this->dump($stack));
@@ -95,7 +95,8 @@ class YamlController extends Controller
         file_put_contents(\Yii::getAlias($file), $data);
     }
 
-    private function dump($stack){
+    private function dump($stack)
+    {
         $this->ksortRecursive($stack);
         return Yaml::dump($stack, 10);
     }
@@ -104,18 +105,29 @@ class YamlController extends Controller
      * helper function
      *
      * @param $stack
-     * @param $attributes
+     * @param $removeAttributes
      *
      * @return mixed
      */
-    private function removeServiceAttributes($stack, $attributes)
+    private function removeServiceAttributes($stack, $removeAttributes)
     {
         // TODO: make generic functions
-        foreach ($stack as $i => $services) {
-            if (is_array($services)) {
-                foreach ($services as $j => $service) {
-                    foreach ($attributes AS $attr) {
-                        unset($stack[$i][$attr]);
+        foreach ($stack as $serviceName => $serviceAttributes) {
+            if (is_array($serviceAttributes)) {
+                foreach ($serviceAttributes as $attrName => $attrData) {
+                    foreach ($removeAttributes AS $removeAttr => $removeValuePattern) {
+                        if ($removeAttr == $attrName) {
+                            if (!is_array($attrData)) {
+                                unset($stack[$serviceName][$attrName]);
+                                continue;
+                            }
+                            foreach ($attrData AS $value) {
+                                var_dump($removeValuePattern);
+                                if (preg_match($removeValuePattern, $value)) {
+                                    unset($stack[$serviceName][$attrName]);
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -131,10 +143,14 @@ class YamlController extends Controller
      *
      * @return mixed
      */
-    private function removeServices($stack, $services)
+    private function removeServices($stack, $patterns)
     {
-        foreach ($services AS $name) {
-            unset($stack[$name]);
+        foreach ($stack AS $name => $service) {
+            foreach ($patterns AS $pattern) {
+                if (preg_match($pattern, $name)) {
+                    unset($stack[$name]);
+                }
+            }
         }
         return $stack;
     }
@@ -146,8 +162,11 @@ class YamlController extends Controller
         }
     }
 
-    private function ksortRecursive(&$array, $sort_flags = SORT_REGULAR) {
-        if (!is_array($array)) return false;
+    private function ksortRecursive(&$array, $sort_flags = SORT_REGULAR)
+    {
+        if (!is_array($array)) {
+            return false;
+        }
         ksort($array, $sort_flags);
         foreach ($array as &$arr) {
             $this->ksortRecursive($arr, $sort_flags);
