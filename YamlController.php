@@ -57,23 +57,16 @@ class YamlController extends Controller
         $stack = ArrayHelper::merge($stack, $this->readFile("{$this->templateDirectory}/{$file}.tpl.yml"));
         $this->writeFile("{$this->outputDirectory}/docker-compose-{$file}.yml", $this->dump($stack));
 
-        $file = 'prestaging-local';
-        $this->stdout("\nCreating '{$file}' ");
-        $stack = $this->removeServiceAttributes($stack, ['volumes' => '/.*/', 'build' => '/.*/']);
-        #####$this->removeAttributes($stack['appcli'], ['links']);
-        $this->removeAttributes($stack['apicli'], ['links']);
-        $stack = $this->removeServices($stack, ['/^TMP/',]);
-        $stack = $this->removeServiceAttributes($stack, ['links' => '/^TMP/']);
-        $stack = ArrayHelper::merge($stack, $this->readFile("{$this->templateDirectory}/{$file}.tpl.yml"));
-        $this->writeFile("{$this->outputDirectory}/docker-compose-{$file}.yml", $this->dump($stack));
-
         $stagingFiles = FileHelper::findFiles(\Yii::getAlias($this->templateDirectory),['only'=>['staging*']]);
         foreach($stagingFiles AS $filePath) {
             $file = basename($filePath,'.tpl.yml');
-            $this->stdout("\nCreating '{$file}'...\n");
+            $this->stdout("\nCreating '{$file}' ");
+            $stack = $this->removeServiceAttributes($stack, ['volumes' => '/.*/', 'build' => '/.*/']);
+            $this->removeAttributes($stack['apicli'], ['links']);
+            $stack = $this->removeServices($stack, ['/TMP$/',]);
+            $stack = $this->removeServiceAttributes($stack, ['links' => '/TMP:/']);
             $stack = ArrayHelper::merge($stack, $this->readFile("{$this->templateDirectory}/{$file}.tpl.yml"));
             $this->writeFile("{$this->outputDirectory}/docker-compose-{$file}.yml", $this->dump($stack));
-
         }
 
         $this->stdout("\n\nDone.\n");
