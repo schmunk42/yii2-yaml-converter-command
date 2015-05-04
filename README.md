@@ -1,6 +1,14 @@
 YAML Converter Extension for Yii 2.0 Framework
 ==============================================
+
 Converts and merges YAML files based on YAML rules
+
+---
+
+**Project is in initial development phase, do not use in production**
+
+---
+
 
 Installation
 ------------
