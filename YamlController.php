@@ -60,12 +60,13 @@ class YamlController extends Controller
             $stack = $this->removeServiceAttributes($stack, ['build' => '/.*/']);
             $stack = $this->removeServiceAttributes($stack, ['external_links' => '/.*/']);
             $stack = $this->removeServiceAttributes($stack, ['links' => '/TMP/']);
-            $stack = $this->removeServiceAttributes($stack, ['images' => '/null/']);
             $stack = $this->removeServiceAttributes($stack, ['environment' => '/\~\^dev/']);
             $stack = $this->removeServices($stack, ['/TMP$/',]);
             // TODO - end
 
             $stack = ArrayHelper::merge($stack, $this->readFile("{$path}/{$file}.tpl.yml"));
+
+            $stack = $this->removeServiceAttributes($stack, ['image' => '/REMOVE/']);
 
             $filePrefix = basename($baseFile, '.yml') . '-';
             $filePrefix = str_replace('docker-compose-', '', $filePrefix);
@@ -123,9 +124,11 @@ class YamlController extends Controller
                     foreach ($removeAttributes AS $removeAttr => $removeValuePattern) {
                         if ($removeAttr == $attrName) {
                             if (!is_array($attrData)) {
-                                echo "O";
-                                unset($stack[$serviceName][$attrName]);
-                                continue;
+                                if (preg_match($removeValuePattern, $attrData)) {
+                                    echo "O";
+                                    unset($stack[$serviceName][$attrName]);
+                                    continue;
+                                }
                             } elseif (is_array($stack[$serviceName][$attrName])) {
                                 foreach ($attrData AS $i => $value) {
                                     if (preg_match($removeValuePattern, $value)) {
