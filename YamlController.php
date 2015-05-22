@@ -23,7 +23,7 @@ class YamlController extends Controller
     /**
      * @var string yaml output directory
      */
-    public $outputDirectory = '@app';
+    public $outputDirectory = '@app/build/stacks-gen';
 
     /**
      * @inheritdoc
@@ -42,34 +42,42 @@ class YamlController extends Controller
     public function actionConvertDockerCompose()
     {
         $this->stdout("Starting YAML convert process...\n");
-        $dev = $this->readFile($this->dockerComposeFile);
-
-        $file = 'test-local';
-        $this->stdout("\nCreating '{$file}' ");
-        $dev   = $this->removeServiceAttributes($dev, ['volumes' => '/.*/', 'build' => '/.*/']);
-        $stack = $this->readFile("{$this->templateDirectory}/{$file}.tpl.yml");
-        $stack = ArrayHelper::merge($dev, $stack);
-        $this->writeFile("{$this->outputDirectory}/docker-compose-{$file}.yml", $this->dump($stack));
-
-        $file = 'ci-gitlab';
-        $this->stdout("\nCreating '{$file}' ");
-        $stack = $this->removeServiceAttributes($stack, ['volumes' => '/.*/', 'build' => '/.*/']);
-        $stack = ArrayHelper::merge($stack, $this->readFile("{$this->templateDirectory}/{$file}.tpl.yml"));
-        $this->writeFile("{$this->outputDirectory}/docker-compose-{$file}.yml", $this->dump($stack));
-
-        $stagingFiles = FileHelper::findFiles(\Yii::getAlias($this->templateDirectory),['only'=>['staging*']]);
-        foreach($stagingFiles AS $filePath) {
-            $file = basename($filePath,'.tpl.yml');
-            $this->stdout("\nCreating '{$file}' ");
-            $stack = $this->removeServiceAttributes($stack, ['volumes' => '/.*/', 'build' => '/.*/']);
-            $this->removeAttributes($stack['apicli'], ['links']);
-            $stack = $this->removeServices($stack, ['/TMP$/',]);
-            $stack = $this->removeServiceAttributes($stack, ['links' => '/TMP:/']);
-            $stack = ArrayHelper::merge($stack, $this->readFile("{$this->templateDirectory}/{$file}.tpl.yml"));
-            $this->writeFile("{$this->outputDirectory}/docker-compose-{$file}.yml", $this->dump($stack));
-        }
-
+        $this->convertYamlTemplates($this->dockerComposeFile, \Yii::getAlias($this->templateDirectory));
         $this->stdout("\n\nDone.\n");
+    }
+
+    private function convertYamlTemplates($baseFile, $path)
+    {
+        $files = FileHelper::findFiles($path, ['only' => ['/*.tpl.yml']]);
+        $dev   = $this->readFile($baseFile);
+
+        foreach ($files AS $filePath) {
+            $file = basename($filePath, '.tpl.yml');
+            $this->stdout("\nCreating '{$file}' ");
+
+            // TODO - begin
+            $stack = $this->removeServiceAttributes($dev, ['volumes' => '/.*/']);
+            $stack = $this->removeServiceAttributes($stack, ['build' => '/.*/']);
+            $stack = $this->removeServiceAttributes($stack, ['external_links' => '/.*/']);
+            $stack = $this->removeServiceAttributes($stack, ['links' => '/TMP/']);
+            $stack = $this->removeServiceAttributes($stack, ['images' => '/null/']);
+            $stack = $this->removeServiceAttributes($stack, ['environment' => '/\~\^dev/']);
+            $stack = $this->removeServices($stack, ['/TMP$/',]);
+            // TODO - end
+
+            $stack = ArrayHelper::merge($stack, $this->readFile("{$path}/{$file}.tpl.yml"));
+
+            $filePrefix = basename($baseFile, '.yml') . '-';
+            $filePrefix = str_replace('docker-compose-', '', $filePrefix);
+
+            $outputFile = "{$this->outputDirectory}/{$filePrefix}{$file}.yml";
+            $this->writeFile($outputFile, $this->dump($stack));
+
+            $alias = \Yii::getAlias($path) . '/' . $file;
+            if (is_dir($alias)) {
+                $this->convertYamlTemplates($outputFile, $alias);
+            }
+        }
     }
 
     /**
@@ -115,17 +123,27 @@ class YamlController extends Controller
                     foreach ($removeAttributes AS $removeAttr => $removeValuePattern) {
                         if ($removeAttr == $attrName) {
                             if (!is_array($attrData)) {
-                                echo "X";
+                                echo "O";
                                 unset($stack[$serviceName][$attrName]);
                                 continue;
-                            }
-                            foreach ($attrData AS $value) {
-                                if (preg_match($removeValuePattern, $value)) {
-                                    unset($stack[$serviceName][$attrName]);
-                                    echo "X";
-                                } else {
-                                    echo ".";
+                            } elseif (is_array($stack[$serviceName][$attrName])) {
+                                foreach ($attrData AS $i => $value) {
+                                    if (preg_match($removeValuePattern, $value)) {
+                                        unset($stack[$serviceName][$attrName][$i]);
+                                        if (count($stack[$serviceName][$attrName]) == 0) {
+                                            unset($stack[$serviceName][$attrName]);
+                                        } else {
+                                            $stack[$serviceName][$attrName] = array_values(
+                                                $stack[$serviceName][$attrName]
+                                            );
+                                        }
+                                        echo "\n{$attrName}[{$value}/{$removeValuePattern}]:";
+                                        echo "X";
+                                    } else {
+                                        #echo ".";
+                                    }
                                 }
+
                             }
                         }
                     }
