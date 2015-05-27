@@ -21,6 +21,10 @@ class YamlController extends Controller
      */
     public $templateDirectory = '@app/build/stacks-tpl';
     /**
+     * @var string php file containing replacement values
+     */
+    public $templateReplacementsFile = '@app/build/stacks-tpl/replacements.php';
+    /**
      * @var string yaml output directory
      */
     public $outputDirectory = '@app/build/stacks-gen';
@@ -48,15 +52,17 @@ class YamlController extends Controller
 
     private function convertYamlTemplates($baseFile, $path)
     {
-        $files = FileHelper::findFiles($path, ['only' => ['/*.tpl.yml']]);
-        $dev   = $this->readFile($baseFile);
+        $replacements = file_get_contents(\Yii::getAlias($this->templateReplacementsFile));
+        $files        = FileHelper::findFiles($path, ['only' => ['/*.tpl.yml']]);
+        $dev          = $this->readFile($baseFile, $replacements);
+        $stack        = $dev;
 
         foreach ($files AS $filePath) {
             $file = basename($filePath, '.tpl.yml');
             $this->stdout("\nCreating '{$file}' ");
 
             // TODO - begin
-            $stack = $this->removeServiceAttributes($dev, ['volumes' => '/.*/']);
+            $stack = $this->removeServiceAttributes($stack, ['volumes' => '/./']);
             $stack = $this->removeServiceAttributes($stack, ['build' => '/.*/']);
             $stack = $this->removeServiceAttributes($stack, ['external_links' => '/.*/']);
             $stack = $this->removeServiceAttributes($stack, ['links' => '/TMP/']);
@@ -64,7 +70,7 @@ class YamlController extends Controller
             $stack = $this->removeServices($stack, ['/TMP$/',]);
             // TODO - end
 
-            $stack = ArrayHelper::merge($stack, $this->readFile("{$path}/{$file}.tpl.yml"));
+            $stack = ArrayHelper::merge($stack, $this->readFile("{$path}/{$file}.tpl.yml", $replacements));
 
             $stack = $this->removeServiceAttributes($stack, ['image' => '/REMOVE/']);
 
@@ -83,12 +89,14 @@ class YamlController extends Controller
 
     /**
      * @param $file YAML file to read and parse
+     * @param $replacements
      *
      * @return array data from the YAML file
      */
-    public function readFile($file)
+    public function readFile($file, $replacements = [])
     {
         $file = file_get_contents(\Yii::getAlias($file));
+        $file = $this->parseReplacements($file, $replacements);
         return Yaml::parse($file);
     }
 
@@ -99,6 +107,14 @@ class YamlController extends Controller
     public function writeFile($file, $data)
     {
         file_put_contents(\Yii::getAlias($file), $data);
+    }
+
+    private function parseReplacements($string, $replacements)
+    {
+        foreach ($replacements AS $token => $value) {
+            $string = str_replace('%' . $token . '%', $value, $string);
+        }
+        return $string;
     }
 
     private function dump($stack)
