@@ -36,7 +36,7 @@ class YamlController extends Controller
     {
         return array_merge(
             parent::options($actionId),
-            ['dockerComposeFile', 'templateDirectory', 'outputDirectory']
+            ['dockerComposeFile', 'templateDirectory', 'outputDirectory','templateReplacementsFile']
         );
     }
 
@@ -52,21 +52,23 @@ class YamlController extends Controller
 
     private function convertYamlTemplates($baseFile, $path)
     {
-        $replacements = file_get_contents(\Yii::getAlias($this->templateReplacementsFile));
+        $replacements = require(\Yii::getAlias($this->templateReplacementsFile));
+        #var_dump($replacements);exit;
         $files        = FileHelper::findFiles($path, ['only' => ['/*.tpl.yml']]);
         $dev          = $this->readFile($baseFile, $replacements);
-        $stack        = $dev;
 
         foreach ($files AS $filePath) {
             $file = basename($filePath, '.tpl.yml');
             $this->stdout("\nCreating '{$file}' ");
 
             // TODO - begin
-            $stack = $this->removeServiceAttributes($stack, ['volumes' => '/./']);
+            $stack        = $dev;
+            $stack = $this->removeServiceAttributes($stack, ['volumes' => '/.*/']);
             $stack = $this->removeServiceAttributes($stack, ['build' => '/.*/']);
             $stack = $this->removeServiceAttributes($stack, ['external_links' => '/.*/']);
             $stack = $this->removeServiceAttributes($stack, ['links' => '/TMP/']);
             $stack = $this->removeServiceAttributes($stack, ['environment' => '/\~\^dev/']);
+            $stack = $this->removeServiceAttributes($stack, ['volumes' => '/./']); ## TODO - fix me, both volume remove calls needed?!?
             $stack = $this->removeServices($stack, ['/TMP$/',]);
             // TODO - end
 
