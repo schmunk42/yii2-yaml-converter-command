@@ -12,7 +12,7 @@ namespace dmstr\console\controllers;
 use yii\helpers\ArrayHelper;
 use yii\helpers\FileHelper;
 
-class DockerStackConverterConverterController extends YamlConverterController
+class DockerStackConverterController extends YamlConverterController
 {
     /**
      * convert and merge docker-compose.yml with templates
