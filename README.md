@@ -24,6 +24,8 @@ composer require --prefer-dist dmstr/yii2-yaml-converter-command "*"
 to the require section of your `composer.json` file.
 
 
+    $app->controllerMap['yaml'] = 'dmstr\console\controllers\DockerStackConverterController';
+
 Usage
 -----
 

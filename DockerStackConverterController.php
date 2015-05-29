@@ -1,45 +1,19 @@
 <?php
 /**
- * YAML converter
+ * Created by PhpStorm.
+ * User: tobias
+ * Date: 29.05.15
+ * Time: 21:24
  */
 
 namespace dmstr\console\controllers;
 
-use Symfony\Component\Yaml\Yaml;
-use yii\console\Controller;
+
 use yii\helpers\ArrayHelper;
 use yii\helpers\FileHelper;
 
-class YamlController extends Controller
+class DockerStackConverterConverterController extends YamlConverterController
 {
-    /**
-     * @var string development docker-compose file
-     */
-    public $dockerComposeFile = '@app/docker-compose.yml';
-    /**
-     * @var string yaml template directory
-     */
-    public $templateDirectory = '@app/build/stacks-tpl';
-    /**
-     * @var string php file containing replacement values
-     */
-    public $templateReplacementsFile = '@app/build/stacks-tpl/replacements.php';
-    /**
-     * @var string yaml output directory
-     */
-    public $outputDirectory = '@app/build/stacks-gen';
-
-    /**
-     * @inheritdoc
-     */
-    public function options($actionId)
-    {
-        return array_merge(
-            parent::options($actionId),
-            ['dockerComposeFile', 'templateDirectory', 'outputDirectory','templateReplacementsFile']
-        );
-    }
-
     /**
      * convert and merge docker-compose.yml with templates
      */
@@ -54,22 +28,26 @@ class YamlController extends Controller
     {
         $replacements = require(\Yii::getAlias($this->templateReplacementsFile));
         #var_dump($replacements);exit;
-        $files        = FileHelper::findFiles($path, ['only' => ['/*.tpl.yml']]);
-        $dev          = $this->readFile($baseFile, $replacements);
+        $files = FileHelper::findFiles($path, ['only' => ['/*.tpl.yml']]);
+        $dev   = $this->readFile($baseFile, $replacements);
 
         foreach ($files AS $filePath) {
             $file = basename($filePath, '.tpl.yml');
             $this->stdout("\nCreating '{$file}' ");
 
             // TODO - begin
-            $stack        = $dev;
+            $stack = $dev;
             $stack = $this->removeServiceAttributes($stack, ['volumes' => '/.*/']);
             $stack = $this->removeServiceAttributes($stack, ['build' => '/.*/']);
             $stack = $this->removeServiceAttributes($stack, ['external_links' => '/.*/']);
             $stack = $this->removeServiceAttributes($stack, ['links' => '/TMP/']);
             $stack = $this->removeServiceAttributes($stack, ['environment' => '/\~\^dev/']);
-            $stack = $this->removeServiceAttributes($stack, ['volumes' => '/./']); ## TODO - fix me, both volume remove calls needed?!?
+            $stack = $this->removeServiceAttributes(
+                $stack,
+                ['volumes' => '/./']
+            ); ## TODO - fix me, both volume remove calls needed?!?
             $stack = $this->removeServices($stack, ['/TMP$/',]);
+            $stack = $this->removeServices($stack, ['/tmp$/',]);
             // TODO - end
 
             $stack = ArrayHelper::merge($stack, $this->readFile("{$path}/{$file}.tpl.yml", $replacements));
@@ -87,42 +65,6 @@ class YamlController extends Controller
                 $this->convertYamlTemplates($outputFile, $alias);
             }
         }
-    }
-
-    /**
-     * @param $file YAML file to read and parse
-     * @param $replacements
-     *
-     * @return array data from the YAML file
-     */
-    public function readFile($file, $replacements = [])
-    {
-        $file = file_get_contents(\Yii::getAlias($file));
-        $file = $this->parseReplacements($file, $replacements);
-        return Yaml::parse($file);
-    }
-
-    /**
-     * @param $file
-     * @param $data
-     */
-    public function writeFile($file, $data)
-    {
-        file_put_contents(\Yii::getAlias($file), $data);
-    }
-
-    private function parseReplacements($string, $replacements)
-    {
-        foreach ($replacements AS $token => $value) {
-            $string = str_replace('%' . $token . '%', $value, $string);
-        }
-        return $string;
-    }
-
-    private function dump($stack)
-    {
-        $this->ksortRecursive($stack);
-        return Yaml::dump($stack, 10);
     }
 
     /**
@@ -174,6 +116,7 @@ class YamlController extends Controller
         return $stack;
     }
 
+
     /**
      * helper function
      *
@@ -199,17 +142,5 @@ class YamlController extends Controller
         foreach ($attributes AS $attr) {
             unset($service[$attr]);
         }
-    }
-
-    private function ksortRecursive(&$array, $sort_flags = SORT_REGULAR)
-    {
-        if (!is_array($array)) {
-            return false;
-        }
-        ksort($array, $sort_flags);
-        foreach ($array as &$arr) {
-            $this->ksortRecursive($arr, $sort_flags);
-        }
-        return true;
     }
 }
