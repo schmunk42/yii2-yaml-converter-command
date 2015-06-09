@@ -26,16 +26,17 @@ class DockerStackConverterController extends BaseYamlConverterController
 
     private function convertYamlTemplates($baseFile, $path)
     {
-        #$replacements = require();
-        $replacements = is_file(\Yii::getAlias($this->templateReplacementsFile))?$this->readFile($this->templateReplacementsFile):[];
-        #var_dump($replacements);exit;
+        $replacements = is_file(\Yii::getAlias($this->templateReplacementsFile)) ?
+            $this->readFile($this->templateReplacementsFile) :
+            [];
+
         $files = FileHelper::findFiles($path, ['only' => ['/*.tpl.yml']]);
         if (empty($files)) {
             $this->stdout("No templates found in {$path}.");
             return;
         }
 
-        $dev   = $this->readFile($baseFile, $replacements);
+        $dev = $this->readFile($baseFile, $replacements);
 
         foreach ($files AS $filePath) {
             $file = basename($filePath, '.tpl.yml');
@@ -83,7 +84,7 @@ class DockerStackConverterController extends BaseYamlConverterController
      */
     private function removeServiceAttributes($stack, $removeAttributes)
     {
-        // TODO: make generic functions
+        // custom parser for docker-compose files
         foreach ($stack as $serviceName => $serviceAttributes) {
             if (is_array($serviceAttributes)) {
                 foreach ($serviceAttributes as $attrName => $attrData) {
