@@ -44,22 +44,23 @@ class DockerStackConverterController extends BaseYamlConverterController
 
             // TODO - begin
             $stack = $dev;
+
+            $stack = $this->removeServiceAttributes($stack, ['volumes' => '/:/']);
+
+            $stack = ArrayHelper::merge($stack, $this->readFile("{$path}/{$file}.tpl.yml", $replacements));
+
             $stack = $this->removeServiceAttributes($stack, ['volumes' => '/REMOVE/']);
-            $stack = $this->removeServiceAttributes($stack, ['build' => '/REMOVE/']);
             $stack = $this->removeServiceAttributes($stack, ['external_links' => '/REMOVE/']);
             $stack = $this->removeServiceAttributes($stack, ['environment' => '/REMOVE/']);
             $stack = $this->removeServiceAttributes($stack, ['links' => '/TMP/']);
             $stack = $this->removeServiceAttributes($stack, ['links' => '/tmp/']);
-            $stack = $this->removeServiceAttributes(
-                $stack,
-                ['volumes' => '/./']
-            ); ## TODO - fix me, both volume remove calls needed?!?
+
+
             $stack = $this->removeServices($stack, ['/TMP$/',]);
             $stack = $this->removeServices($stack, ['/tmp$/',]);
             // TODO - end
 
-            $stack = ArrayHelper::merge($stack, $this->readFile("{$path}/{$file}.tpl.yml", $replacements));
-
+            $stack = $this->removeServiceAttributes($stack, ['build' => '/REMOVE/']);
             $stack = $this->removeServiceAttributes($stack, ['image' => '/REMOVE/']);
 
             $filePrefix = basename($baseFile, '.yml') . '-';
@@ -101,6 +102,7 @@ class DockerStackConverterController extends BaseYamlConverterController
                                 foreach ($attrData AS $i => $value) {
                                     if (preg_match($removeValuePattern, $value)) {
                                         unset($stack[$serviceName][$attrName][$i]);
+                                        // unset attribute if this is the last element
                                         if (count($stack[$serviceName][$attrName]) == 0) {
                                             unset($stack[$serviceName][$attrName]);
                                         } else {
