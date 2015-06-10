@@ -37,11 +37,12 @@ class DockerStackConverterController extends YamlConverterController
 
             // TODO - begin
             $stack = $dev;
-            $stack = $this->removeServiceAttributes($stack, ['volumes' => '/.*/']);
-            $stack = $this->removeServiceAttributes($stack, ['build' => '/.*/']);
-            $stack = $this->removeServiceAttributes($stack, ['external_links' => '/.*/']);
+            $stack = $this->removeServiceAttributes($stack, ['volumes' => '/REMOVE/']);
+            $stack = $this->removeServiceAttributes($stack, ['build' => '/REMOVE/']);
+            $stack = $this->removeServiceAttributes($stack, ['external_links' => '/REMOVE/']);
+            $stack = $this->removeServiceAttributes($stack, ['environment' => '/REMOVE/']);
             $stack = $this->removeServiceAttributes($stack, ['links' => '/TMP/']);
-            $stack = $this->removeServiceAttributes($stack, ['environment' => '/\~\^dev/']);
+            $stack = $this->removeServiceAttributes($stack, ['links' => '/tmp/']);
             $stack = $this->removeServiceAttributes(
                 $stack,
                 ['volumes' => '/./']
