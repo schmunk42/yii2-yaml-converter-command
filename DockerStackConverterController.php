@@ -12,7 +12,7 @@ namespace dmstr\console\controllers;
 use yii\helpers\ArrayHelper;
 use yii\helpers\FileHelper;
 
-class DockerStackConverterController extends YamlConverterController
+class DockerStackConverterController extends BaseYamlConverterController
 {
     /**
      * convert and merge docker-compose.yml with templates
@@ -26,10 +26,17 @@ class DockerStackConverterController extends YamlConverterController
 
     private function convertYamlTemplates($baseFile, $path)
     {
-        $replacements = require(\Yii::getAlias($this->templateReplacementsFile));
-        #var_dump($replacements);exit;
+        $replacements = is_file(\Yii::getAlias($this->templateReplacementsFile)) ?
+            $this->readFile($this->templateReplacementsFile) :
+            [];
+
         $files = FileHelper::findFiles($path, ['only' => ['/*.tpl.yml']]);
-        $dev   = $this->readFile($baseFile, $replacements);
+        if (empty($files)) {
+            $this->stdout("No templates found in {$path}.");
+            return;
+        }
+
+        $dev = $this->readFile($baseFile, $replacements);
 
         foreach ($files AS $filePath) {
             $file = basename($filePath, '.tpl.yml');
@@ -78,7 +85,7 @@ class DockerStackConverterController extends YamlConverterController
      */
     private function removeServiceAttributes($stack, $removeAttributes)
     {
-        // TODO: make generic functions
+        // custom parser for docker-compose files
         foreach ($stack as $serviceName => $serviceAttributes) {
             if (is_array($serviceAttributes)) {
                 foreach ($serviceAttributes as $attrName => $attrData) {

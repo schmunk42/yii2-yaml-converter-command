@@ -8,7 +8,7 @@ namespace dmstr\console\controllers;
 use Symfony\Component\Yaml\Yaml;
 use yii\console\Controller;
 
-class YamlConverterController extends Controller
+class BaseYamlConverterController extends Controller
 {
     /**
      * @var string development docker-compose file
@@ -21,7 +21,7 @@ class YamlConverterController extends Controller
     /**
      * @var string php file containing replacement values
      */
-    public $templateReplacementsFile = '@app/build/stacks-tpl/replacements.php';
+    public $templateReplacementsFile = '@app/build/stacks-tpl/env.yml';
     /**
      * @var string yaml output directory
      */
@@ -49,7 +49,8 @@ class YamlConverterController extends Controller
     {
         $file = file_get_contents(\Yii::getAlias($file));
         $file = $this->parseReplacements($file, $replacements);
-        return Yaml::parse($file);
+        $yaml = Yaml::parse($file);
+        return $yaml?$yaml:[];
     }
 
     /**
