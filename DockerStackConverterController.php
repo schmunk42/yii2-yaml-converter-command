@@ -96,7 +96,6 @@ class DockerStackConverterController extends BaseYamlConverterController
                                 if (preg_match($removeValuePattern, $attrData)) {
                                     echo "O";
                                     unset($stack[$serviceName][$attrName]);
-                                    continue;
                                 }
                             } elseif (is_array($stack[$serviceName][$attrName])) {
                                 foreach ($attrData AS $i => $value) {
@@ -105,10 +104,6 @@ class DockerStackConverterController extends BaseYamlConverterController
                                         // unset attribute if this is the last element
                                         if (count($stack[$serviceName][$attrName]) == 0) {
                                             unset($stack[$serviceName][$attrName]);
-                                        } else {
-                                            $stack[$serviceName][$attrName] = array_values(
-                                                $stack[$serviceName][$attrName]
-                                            );
                                         }
                                         echo "\n{$attrName}[{$value}/{$removeValuePattern}]:";
                                         echo "X";
