@@ -36,32 +36,34 @@ class DockerStackConverterController extends BaseYamlConverterController
             return;
         }
 
-        $dev = $this->readFile($baseFile, $replacements);
+        // import stack data
+        $baseStack = $this->readFile($baseFile, $replacements);
 
         foreach ($files AS $filePath) {
             $file = basename($filePath, '.tpl.yml');
             $this->stdout("\nCreating '{$file}' ");
 
-            // TODO - begin
-            $stack = $dev;
+            // Start
+            $stack = $baseStack;
 
+            // Rule: Remove host volumes in every step
             $stack = $this->removeServiceAttributes($stack, ['volumes' => '/:/']);
 
-            $stack = ArrayHelper::merge($stack, $this->readFile("{$path}/{$file}.tpl.yml", $replacements));
+            $template = $this->readFile("{$path}/{$file}.tpl.yml", $replacements);
+            $stack    = ArrayHelper::merge($stack, $template);
 
-            $stack = $this->removeServiceAttributes($stack, ['volumes' => '/REMOVE/']);
-            $stack = $this->removeServiceAttributes($stack, ['external_links' => '/REMOVE/']);
-            $stack = $this->removeServiceAttributes($stack, ['environment' => '/REMOVE/']);
+            // Rule: remove temporary services and links
+            $stack = $this->removeServices($stack, ['/TMP$/',]);
+            $stack = $this->removeServices($stack, ['/tmp$/',]);
             $stack = $this->removeServiceAttributes($stack, ['links' => '/TMP/']);
             $stack = $this->removeServiceAttributes($stack, ['links' => '/tmp/']);
 
-
-            $stack = $this->removeServices($stack, ['/TMP$/',]);
-            $stack = $this->removeServices($stack, ['/tmp$/',]);
-            // TODO - end
-
+            // Rule: remove attributes with value 'REMOVE'
             $stack = $this->removeServiceAttributes($stack, ['build' => '/REMOVE/']);
             $stack = $this->removeServiceAttributes($stack, ['image' => '/REMOVE/']);
+            $stack = $this->removeServiceAttributes($stack, ['volumes' => '/REMOVE/']);
+            $stack = $this->removeServiceAttributes($stack, ['external_links' => '/REMOVE/']);
+            $stack = $this->removeServiceAttributes($stack, ['environment' => '/REMOVE/']);
 
             $filePrefix = basename($baseFile, '.yml') . '-';
             $filePrefix = str_replace('docker-compose-', '', $filePrefix);
