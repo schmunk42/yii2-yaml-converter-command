@@ -50,7 +50,23 @@ class DockerStackConverterController extends BaseYamlConverterController
             $stack = $this->removeServiceAttributes($stack, ['volumes' => '/:/']);
 
             $template = $this->readFile("{$path}/{$file}.tpl.yml", $replacements);
-            $stack    = ArrayHelper::merge($stack, $template);
+
+            // Rule: parse control attributes (.name) for cleanup before merge
+            foreach ($template AS $name => $service) {
+                foreach ($service AS $controlAttr => $data) {
+                    if (substr($controlAttr, 0, 1) == '.') {
+                        $targetAttr = substr($controlAttr, 1);
+                        if ($service[$controlAttr] == 'CLEAN') {
+                            unset($stack[$name][$targetAttr]);
+                            unset($template[$name][$controlAttr]);
+                            echo "C";
+                        }
+                    }
+                }
+            }
+
+            // Step: merge stack and template
+            $stack = ArrayHelper::merge($stack, $template);
 
             // Rule: remove temporary services and links
             $stack = $this->removeServices($stack, ['/TMP$/',]);
@@ -58,19 +74,13 @@ class DockerStackConverterController extends BaseYamlConverterController
             $stack = $this->removeServiceAttributes($stack, ['links' => '/TMP/']);
             $stack = $this->removeServiceAttributes($stack, ['links' => '/tmp/']);
 
-            // Rule: remove attributes with value 'REMOVE'
-            $stack = $this->removeServiceAttributes($stack, ['build' => '/REMOVE/']);
-            $stack = $this->removeServiceAttributes($stack, ['image' => '/REMOVE/']);
-            $stack = $this->removeServiceAttributes($stack, ['volumes' => '/REMOVE/']);
-            $stack = $this->removeServiceAttributes($stack, ['external_links' => '/REMOVE/']);
-            $stack = $this->removeServiceAttributes($stack, ['environment' => '/REMOVE/']);
-
+            // output file
             $filePrefix = basename($baseFile, '.yml') . '-';
             $filePrefix = str_replace('docker-compose-', '', $filePrefix);
-
             $outputFile = "{$this->outputDirectory}/{$filePrefix}{$file}.yml";
             $this->writeFile($outputFile, $this->dump($stack));
 
+            // check subdirectories
             $alias = \Yii::getAlias($path) . '/' . $file;
             if (is_dir($alias)) {
                 $this->convertYamlTemplates($outputFile, $alias);
