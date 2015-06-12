@@ -53,6 +53,15 @@ class DockerStackConverterController extends BaseYamlConverterController
 
             // Rule: parse control attributes (.name) for cleanup before merge
             foreach ($template AS $name => $service) {
+                if (substr($name, 0, 1) == '.') {
+                    #echo $service;exit;
+                    if ($service == 'CLEAN') {
+                        unset($stack[substr($name,1)]);
+                        unset($template[$name]);
+                        echo "S";
+                        continue;
+                    }
+                }
                 foreach ($service AS $controlAttr => $data) {
                     if (substr($controlAttr, 0, 1) == '.') {
                         $targetAttr = substr($controlAttr, 1);
