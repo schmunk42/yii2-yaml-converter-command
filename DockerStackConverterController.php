@@ -45,10 +45,6 @@ class DockerStackConverterController extends BaseYamlConverterController
 
             // Start
             $stack = $baseStack;
-
-            // Rule: Remove host volumes in every step
-            $stack = $this->removeServiceAttributes($stack, ['volumes' => '/:/']);
-
             $template = $this->readFile("{$path}/{$file}.tpl.yml", $replacements);
 
             // Rule: parse control attributes (.name) for cleanup before merge
@@ -76,12 +72,6 @@ class DockerStackConverterController extends BaseYamlConverterController
 
             // Step: merge stack and template
             $stack = ArrayHelper::merge($stack, $template);
-
-            // Rule: remove temporary services and links
-            $stack = $this->removeServices($stack, ['/TMP$/',]);
-            $stack = $this->removeServices($stack, ['/tmp$/',]);
-            $stack = $this->removeServiceAttributes($stack, ['links' => '/TMP/']);
-            $stack = $this->removeServiceAttributes($stack, ['links' => '/tmp/']);
 
             // output file
             $filePrefix = basename($baseFile, '.yml') . '-';
@@ -132,7 +122,6 @@ class DockerStackConverterController extends BaseYamlConverterController
                                         #echo ".";
                                     }
                                 }
-
                             }
                         }
                     }
