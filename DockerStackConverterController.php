@@ -26,13 +26,14 @@ class DockerStackConverterController extends BaseYamlConverterController
 
     private function convertYamlTemplates($baseFile, $path)
     {
+        $path = realpath($path);
         $replacements = is_file(\Yii::getAlias($this->templateReplacementsFile)) ?
             $this->readFile($this->templateReplacementsFile) :
             [];
 
         $files = FileHelper::findFiles($path, ['only' => ['/*.tpl.yml']]);
         if (empty($files)) {
-            $this->stdout("No templates found in {$path}.");
+            $this->stdout("No templates found in '{$path}'");
             return;
         }
 
