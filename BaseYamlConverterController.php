@@ -7,6 +7,7 @@ namespace dmstr\console\controllers;
 
 use Symfony\Component\Yaml\Yaml;
 use yii\console\Controller;
+use yii\console\Exception;
 
 class BaseYamlConverterController extends Controller
 {
@@ -38,6 +39,19 @@ class BaseYamlConverterController extends Controller
         );
     }
 
+    /**
+     * Checks for write permissions in outputDirectory
+     * @throws Exception
+     */
+    public function beforeAction($action)
+    {
+        parent::beforeAction($action);
+        if (!is_writable(\Yii::getAlias($this->outputDirectory))) {
+            throw new Exception("Invalid outputDirectory: '{$this->outputDirectory}' is not writable");
+        } else {
+            return true;
+        }
+    }
 
     /**
      * @param $file YAML file to read and parse
