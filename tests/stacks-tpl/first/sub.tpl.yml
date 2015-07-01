@@ -1,0 +1,5 @@
+app:
+  .build: CLEAN
+mariadb:
+  environemnt:
+    - foo=bar

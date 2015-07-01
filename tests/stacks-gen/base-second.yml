@@ -1,0 +1,8 @@
+app:
+    build: .
+    command: 'sh src/run.sh'
+    links:
+        - 'appnginx:WEB'
+        - 'mariadb:DB'
+    volumes:
+        - '.:/app'

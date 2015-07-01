@@ -1,0 +1,12 @@
+app:
+    command: 'sh src/run.sh'
+    image: foo
+    links:
+        - 'appnginx:WEB'
+        - 'mariadb:DB'
+    volumes:
+        - '.:/app'
+mariadb:
+    environemnt:
+        - foo=bar
+    image: mariadb

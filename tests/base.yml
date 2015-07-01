@@ -1,0 +1,10 @@
+app:
+  build: .
+  volumes:
+    - '.:/app'
+  links:
+    - 'appnginx:WEB'
+    - 'mariadb:DB'
+  command: 'sh src/run.sh'
+mariadb:
+  image: mariadb
