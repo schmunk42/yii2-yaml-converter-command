@@ -3,7 +3,7 @@ YAML Converter Extension for Yii 2.0 Framework
 
 ---
 
-**This is a BETA version, do not use in production**
+:rotating_light: **THIS REPOSITORY IS DEPRECATED**
 
 ---
 
